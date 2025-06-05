@@ -44,6 +44,7 @@ int bootcounter = 0;
 static json_writer json_writers[] = {
 
   {json_handler_otag, {.otag = "{\n"}, },
+
     {json_handler_entry_text, {.otag = "", .name = "entry1", .fmt = "%s", .ctag=",\n", .level=1}, entry1_text},
     {json_handler_entry_text, {.otag = "", .name = "entry2", .ctag=",\n", .level=1}, entry2_text},
     {json_handler_entry_text, {.otag = "", .name = "entry3", .ctag=",\n", .level=1}, entry3_text},
