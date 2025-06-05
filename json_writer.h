@@ -27,13 +27,6 @@
 
 #include <stddef.h>
 
-typedef struct {
-  char *buf;
-  size_t len;
-  size_t used;
-  unsigned dynamic: 1;
-} json_buffer;
-
 typedef struct
 {
   const char *otag; /**< Opening tag. */
@@ -43,7 +36,7 @@ typedef struct
   int level;        /* Amount of \t for pretty print. */
 } json_handler_data;
 
-typedef int (*json_handler)(json_buffer *p, const json_handler_data *hndl_data, void *data);
+typedef int (*json_handler)(void *p, const json_handler_data *hndl_data, void *data);
 
 typedef struct {
   json_handler hndl;
@@ -55,23 +48,23 @@ typedef struct {
 extern "C" {
 #endif
 
-json_buffer* alloc_json_buffer(size_t len);
+void* alloc_json_buffer(size_t len);
 
-json_buffer* alloc_json_buffer_static(size_t len, void *buf);
+void* alloc_json_buffer_static(size_t len, void *buf);
 
-void destroy_json_buffer(json_buffer *p);
+void destroy_json_buffer(void *p);
 
-int json_handler_ctag(json_buffer *p, const json_handler_data *hndl_data, void *data);
+int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *data);
 
-int json_handler_otag(json_buffer *p, const json_handler_data *hndl_data, void *data);
+int json_handler_otag(void *p, const json_handler_data *hndl_data, void *data);
 
-int json_handler_entry_text(json_buffer *p, const json_handler_data *hndl_data, void *data);
+int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *data);
 
-int json_handler_entry_number(json_buffer *p, const json_handler_data *hndl_data, void *data);
+int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *data);
 
-char* json_handler_string_buffer(json_buffer *p);
+char* json_handler_string_buffer(void *p);
 
-char* json_handler_compress_in_place(json_buffer *p);
+char* json_handler_compress_in_place(void *p);
 
 #ifdef __cplusplus
 }

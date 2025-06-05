@@ -33,14 +33,21 @@
 
 #include "json_writer.h"
 
-static json_buffer* __alloc_json_buffer(size_t len, void *buf, int dynamic) {
+typedef struct {
+  char *buf;
+  size_t len;
+  size_t used;
+  unsigned dynamic: 1;
+} json_buffer;
+
+static void* __alloc_json_buffer(size_t len, void *buf, int dynamic) {
 
   if (!buf)
     return NULL;
 
   json_buffer *const p = buf;
 
-  p->buf = (char *)(((uint8_t *)p) + sizeof(json_buffer));
+  p->buf = (char *)(((uint8_t *)p) + sizeof(*p));
   p->len = len;
   p->used = 0;
   p->dynamic = dynamic;
@@ -50,12 +57,12 @@ static json_buffer* __alloc_json_buffer(size_t len, void *buf, int dynamic) {
   return p;
 }
 
-json_buffer* alloc_json_buffer(size_t len) {
+void* alloc_json_buffer(size_t len) {
 
   return __alloc_json_buffer(len, malloc(sizeof(json_buffer) + len), 1);
 }
 
-json_buffer* alloc_json_buffer_static(size_t len, void *buf) {
+void* alloc_json_buffer_static(size_t len, void *buf) {
 
   if (len < sizeof(json_buffer))
     return NULL; /* Insufficient space. */
@@ -64,43 +71,47 @@ json_buffer* alloc_json_buffer_static(size_t len, void *buf) {
 }
 
 
-void destroy_json_buffer(json_buffer *p) {
+void destroy_json_buffer(void *p) {
 
   if (!p)
     return;
 
-  if (p->dynamic)
+  if (((json_buffer *)p)->dynamic)
     free(p);
 }
 
 #define json_handler_snprintf(p, ...) \
   p->used += snprintf(p->buf + p->used, p->len - p->used, __VA_ARGS__)
 
-#define json_handler_error_code(p) ((p->used < p->len) ? 0 : 1)
+#define json_handler_error_code(p) \
+  ((p->used < p->len) ? 0 : 1)
 
 #define tab_chars "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
 
-int json_handler_ctag(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_ctag(void *_p, const json_handler_data *hndl_data, void *data) {
 
+  json_buffer *p = _p;
   json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
   
   return json_handler_error_code(p);
 }
 
-int json_handler_otag(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_otag(void *_p, const json_handler_data *hndl_data, void *data) {
 
+  json_buffer *p = _p;
   json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   
   return json_handler_error_code(p);
 }
 
-int json_handler_entry_text(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_text(void *_p, const json_handler_data *hndl_data, void *data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
+  json_buffer *p = _p;
   json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   json_handler_snprintf(p, "\"%s\": \"", hndl_data->name);
@@ -110,11 +121,12 @@ int json_handler_entry_text(json_buffer *p, const json_handler_data *hndl_data, 
   return json_handler_error_code(p);
 }
 
-int json_handler_entry_number(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_number(void *_p, const json_handler_data *hndl_data, void *data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
+  json_buffer *p = _p;
   json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   json_handler_snprintf(p, "\"%s\": ", hndl_data->name);
@@ -124,15 +136,14 @@ int json_handler_entry_number(json_buffer *p, const json_handler_data *hndl_data
   return json_handler_error_code(p);
 }
 
-char* json_handler_string_buffer(json_buffer *p) {
+char* json_handler_string_buffer(void *p) {
 
-  return p->buf;
+  return ((json_buffer *)p)->buf;
 }
 
-char* json_handler_compress_in_place(json_buffer *p) {
+char* json_handler_compress_in_place(void *p) {
 
-  char *str = p->buf;
-
+  char *str = json_handler_string_buffer(p);
   int string_found = 0;
   char *r, *w;
 

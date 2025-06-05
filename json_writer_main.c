@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
   if (1)
   {
     static uint8_t static_buffer[1024];
-    json_buffer *p = alloc_json_buffer_static(sizeof(static_buffer), static_buffer);
+    void *p = alloc_json_buffer_static(sizeof(static_buffer), static_buffer);
 
     if (p == NULL)
       return EXIT_FAILURE;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
 
   if (1)
   {
-    json_buffer *p = alloc_json_buffer(1024);
+    void *p = alloc_json_buffer(1024);
 
     if (!p)
       return EXIT_FAILURE;
