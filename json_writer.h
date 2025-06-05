@@ -69,7 +69,9 @@ int json_handler_entry_text(json_buffer *p, const json_handler_data *hndl_data, 
 
 int json_handler_entry_number(json_buffer *p, const json_handler_data *hndl_data, void *data);
 
-const char* json_handler_compress_in_place(char *str);
+char* json_handler_string_buffer(json_buffer *p);
+
+char* json_handler_compress_in_place(json_buffer *p);
 
 #ifdef __cplusplus
 }

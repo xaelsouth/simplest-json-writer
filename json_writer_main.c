@@ -92,9 +92,9 @@ int main(int argc, char *argv[]) {
       }
     }
     
-    printf("%s\n", p->buf);
+    printf("%s\n", json_handler_string_buffer(p));
 
-    printf("%s\n", json_handler_compress_in_place(p->buf));
+    printf("%s\n", json_handler_compress_in_place(p));
         
     destroy_json_buffer(p);
   }
