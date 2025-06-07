@@ -29,6 +29,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
 #include <ctype.h>
 
 #include "json_writer.h"
@@ -45,9 +46,9 @@ static inline void* __json_init_buffer(size_t len, void *buf, int dynamic) {
   if (!buf)
     return NULL;
 
-  json_buffer *const p = buf;
+  json_buffer * const p = buf;
 
-  p->buf = (char *)(((uint8_t *)p) + sizeof(*p));
+  p->buf = (char*)(((uint8_t*)p) + sizeof(*p));
   p->len = len;
   p->used = 0;
   p->dynamic = dynamic;
@@ -57,13 +58,13 @@ static inline void* __json_init_buffer(size_t len, void *buf, int dynamic) {
   return p;
 }
 
-__attribute__((weak)) void* json_malloc(size_t len) { return malloc(len); }
+__attribute__((weak))void* json_malloc(size_t len) { return (malloc(len)); }
 
-__attribute__((weak)) void json_free(void *p) { free(p); }
+__attribute__((weak))void json_free(void *p) { free(p); }
 
 void* json_alloc_buffer(size_t len) {
 
-  return __json_init_buffer(len, json_malloc(sizeof(json_buffer) + len), 1);
+  return (__json_init_buffer(len, json_malloc(sizeof(json_buffer) + len), 1));
 }
 
 void json_destroy_buffer(void *p) {
@@ -71,7 +72,7 @@ void json_destroy_buffer(void *p) {
   if (!p)
     return;
 
-  if (((json_buffer *)p)->dynamic)
+  if (((json_buffer*)p)->dynamic)
     json_free(p);
 }
 
@@ -80,11 +81,18 @@ void* json_init_buffer(size_t len, void *buf) {
   if (len < sizeof(json_buffer))
     return NULL; /* Insufficient space. */
 
-  return __json_init_buffer(len, buf, 0);
+  return (__json_init_buffer(len, buf, 0));
 }
 
-#define __json_handler_snprintf(p, ...) \
-  (p)->used += snprintf((p)->buf + (p)->used, (p)->len - (p)->used, __VA_ARGS__)
+static inline size_t __json_handler_snprintf(json_buffer *p, const char *format, ...) {
+
+  va_list valist;
+  va_start(valist, format);
+  p->used += vsnprintf(p->buf + p->used, p->len - p->used, format, valist);
+  va_end(valist);
+
+  return (p->used);
+}
 
 static inline int __json_handler_error_code(json_buffer *p) {
 
@@ -98,8 +106,8 @@ int json_handler_ctag(void *_p, const json_handler_data *hndl_data, void *data) 
   json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
-  
-  return __json_handler_error_code(p);
+
+  return (__json_handler_error_code(p));
 }
 
 int json_handler_otag(void *_p, const json_handler_data *hndl_data, void *data) {
@@ -107,8 +115,8 @@ int json_handler_otag(void *_p, const json_handler_data *hndl_data, void *data) 
   json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
-  
-  return __json_handler_error_code(p);
+
+  return (__json_handler_error_code(p));
 }
 
 int json_handler_entry_text(void *_p, const json_handler_data *hndl_data, void *data) {
@@ -120,10 +128,10 @@ int json_handler_entry_text(void *_p, const json_handler_data *hndl_data, void *
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   __json_handler_snprintf(p, "\"%s\": \"", hndl_data->name);
-  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%s", data ? (const char *)data : "");
+  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%s", data ? (const char*)data : "");
   __json_handler_snprintf(p, "\"%s", hndl_data->ctag ? hndl_data->ctag : "");
-  
-  return __json_handler_error_code(p);
+
+  return (__json_handler_error_code(p));
 }
 
 int json_handler_entry_number(void *_p, const json_handler_data *hndl_data, void *data) {
@@ -135,13 +143,13 @@ int json_handler_entry_number(void *_p, const json_handler_data *hndl_data, void
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   __json_handler_snprintf(p, "\"%s\": ", hndl_data->name);
-  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%d", data ? *(int *)data : INT_MIN);
+  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%d", data ? *(int*)data : INT_MIN);
   __json_handler_snprintf(p, "%s", hndl_data->ctag);
-  
-  return __json_handler_error_code(p);
+
+  return (__json_handler_error_code(p));
 }
 
-char* json_get_string(void *p) { return ((json_buffer *)p)->buf; }
+char* json_get_string(void *p) { return (((json_buffer*)p)->buf); }
 
 char* json_get_compressed_string(void *p) {
 
