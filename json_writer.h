@@ -27,13 +27,12 @@
 
 #include <stddef.h>
 
-typedef struct
-{
+typedef struct {
   const char *otag; /**< Opening tag. */
   const char *name; /**< Entry name. */
   const char *fmt;  /**< Format. */
   const char *ctag; /**< Closing tag. */
-  int level;        /* Amount of \t for pretty print. */
+  int level;        /**< Amount of \t for pretty print. */
 } json_handler_data;
 
 typedef int (*json_handler)(void *p, const json_handler_data *hndl_data, void *data);
@@ -48,11 +47,18 @@ typedef struct {
 extern "C" {
 #endif
 
-void* alloc_json_buffer(size_t len);
+__attribute__((weak)) void* json_malloc(size_t len);
 
-void* alloc_json_buffer_static(size_t len, void *buf);
+__attribute__((weak)) void json_free(void *p);
 
-void destroy_json_buffer(void *p);
+/** @brief Allocate work buffer. */
+void* json_alloc_buffer(size_t len);
+
+/** @brief Deallocate work buffer. */
+void json_destroy_buffer(void *p);
+
+/** @brief Initialise work buffer from static memory; No deallocation is needed. */
+void* json_init_buffer(size_t len, void *buf);
 
 int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *data);
 
@@ -62,9 +68,11 @@ int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *d
 
 int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *data);
 
-char* json_handler_string_buffer(void *p);
+/** @brief Returns formatted JSON string. */
+char* json_get_string(void *p);
 
-char* json_handler_compress_in_place(void *p);
+/** @brief Returns JSON string without any space characters. */
+char* json_get_compressed_string(void *p);
 
 #ifdef __cplusplus
 }

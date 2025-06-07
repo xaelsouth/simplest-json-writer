@@ -35,9 +35,10 @@
 #define ARRAY_END(arr) (ARRAY_BEGIN(arr) + ARRAY_SIZE(arr))
 
 
-char entry1_text[64] = {0};
+char entry1_text[32] = {0};
 char entry2_text[32] = {0};
 char entry3_text[32] = {0};
+char entry4_text[32] = {0};
 int edgelock_state = 0;
 int bootcounter = 0;
 
@@ -48,39 +49,23 @@ static json_writer json_writers[] = {
     {json_handler_entry_text, {.otag = "", .name = "entry1", .fmt = "%s", .ctag=",\n", .level=1}, entry1_text},
     {json_handler_entry_text, {.otag = "", .name = "entry2", .ctag=",\n", .level=1}, entry2_text},
     {json_handler_entry_text, {.otag = "", .name = "entry3", .ctag=",\n", .level=1}, entry3_text},
-    {json_handler_otag, {.otag = "\"entry4\": {\n", .level=1}},
+    {json_handler_entry_text, {.otag = "", .name = "entry4", .ctag=",\n", .level=1}, entry4_text},
+    {json_handler_otag, {.otag = "\"entry5\": {\n", .level=1}},
 
-      {json_handler_entry_number, {.otag = "", .name = "entry5", .fmt = "%d", .ctag=",\n", .level=2}, &edgelock_state},
-      {json_handler_entry_number, {.otag = "", .name = "entry6", .ctag="\n", .level=2}, &bootcounter},
+      {json_handler_entry_number, {.otag = "", .name = "entry6", .fmt = "%d", .ctag=",\n", .level=2}, &edgelock_state},
+      {json_handler_entry_number, {.otag = "", .name = "entry7", .ctag="\n", .level=2}, &bootcounter},
 
     {json_handler_ctag, {.ctag = "}\n", .level=1}},
 
   {json_handler_ctag, {.ctag = "}"}, },
 };
 
-int main(int argc, char *argv[]) {
-
-  if (1)
-  {
-    static uint8_t static_buffer[1024];
-    void *p = alloc_json_buffer_static(sizeof(static_buffer), static_buffer);
-
-    if (p == NULL)
-      return EXIT_FAILURE;
-
-    destroy_json_buffer(p);
-  }
-
-  if (1)
-  {
-    void *p = alloc_json_buffer(1024);
-
-    if (!p)
-      return EXIT_FAILURE;
+static void _json_example1(void *p) {
 
     snprintf(entry1_text, sizeof(entry1_text), "entry1_text");
     snprintf(entry2_text, sizeof(entry2_text), "entry2_text");
     snprintf(entry3_text, sizeof(entry3_text), "entry3 text with spaces");
+    snprintf(entry4_text, sizeof(entry4_text), "entry4 with \\\"\\\" \\\"\\\" quotes");
     edgelock_state = 42;
     bootcounter = 314;
 
@@ -92,11 +77,34 @@ int main(int argc, char *argv[]) {
       }
     }
     
-    printf("%s\n", json_handler_string_buffer(p));
+    printf("%s\n", json_get_string(p));
 
-    printf("%s\n", json_handler_compress_in_place(p));
+    printf("%s\n", json_get_compressed_string(p));
+}
+
+int main(int argc, char *argv[]) {
+
+  if (1)
+  {
+    static uint8_t static_buffer[1024];
+    void *p = json_init_buffer(sizeof(static_buffer), static_buffer);
+
+    if (!p)
+      return EXIT_FAILURE;
+
+    _json_example1(p);
+  }
+
+  if (1)
+  {
+    void *p = json_alloc_buffer(1024);
+
+    if (!p)
+      return EXIT_FAILURE;
+
+    _json_example1(p);
         
-    destroy_json_buffer(p);
+    json_destroy_buffer(p);
   }
 
   return EXIT_SUCCESS;

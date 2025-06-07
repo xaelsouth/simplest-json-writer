@@ -29,7 +29,7 @@ CC ?= gcc
 RM ?= rm -f
 LDFLAGS ?=
 
-DEPS = json_writer.h
+DEPS = json_writer.h Makefile
 OBJ = json_writer.o json_writer_main.o 
 
 all: $(OUTFILE)
