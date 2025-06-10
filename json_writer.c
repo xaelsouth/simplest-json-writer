@@ -99,32 +99,30 @@ static inline int __json_handler_error_code(json_buffer *p) {
   return ((p->used < p->len) ? 0 : 1);
 }
 
-#define tab_chars "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
+/** 32 tab characters. */
+static char *tab_chars = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
-int json_handler_ctag(void *_p, const json_handler_data *hndl_data, void *data) {
+int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *data) {
 
-  json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
 
   return (__json_handler_error_code(p));
 }
 
-int json_handler_otag(void *_p, const json_handler_data *hndl_data, void *data) {
+int json_handler_otag(void *p, const json_handler_data *hndl_data, void *data) {
 
-  json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
 
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_text(void *_p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
-  json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   __json_handler_snprintf(p, "\"%s\": \"", hndl_data->name);
@@ -134,12 +132,11 @@ int json_handler_entry_text(void *_p, const json_handler_data *hndl_data, void *
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_number(void *_p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
-  json_buffer *p = _p;
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
   __json_handler_snprintf(p, "\"%s\": ", hndl_data->name);
@@ -159,17 +156,23 @@ char* json_get_compressed_string(void *p) {
   int backslash_found = 0;
 
   for (r = str, w = str; *r; ++r) {
-    if (*r == '"') {
-      if (backslash_found)
-        backslash_found = 0;
-      else
-        quote_found ^= 1;
+    if (backslash_found) {
+      if (*r == '"') {      
+        backslash_found ^= 1;
+      }
+      else {
+        assert(0); /* Wrong syntax: quote char " must follow backslash \. */
+        return NULL;
+      }
+    }
+    else if (*r == '"') {
+      quote_found ^= 1;
     }
 
     if (quote_found) {
       *w++ = *r;
       if (*r == '\\')
-        backslash_found = 1;
+        backslash_found ^= 1;
     }
     else if (!isspace(*r)) {
       *w++ = *r;
