@@ -95,6 +95,7 @@ int main(int argc, char *argv[]) {
     _json_example1(p);
   }
 
+  #if !defined(NO_MALLOC)
   if (1)
   {
     void *p = json_alloc_buffer(1024);
@@ -106,6 +107,7 @@ int main(int argc, char *argv[]) {
         
     json_destroy_buffer(p);
   }
+  #endif
 
   return EXIT_SUCCESS;
 }

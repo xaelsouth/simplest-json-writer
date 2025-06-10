@@ -58,6 +58,7 @@ static inline void* __json_init_buffer(size_t len, void *buf, int dynamic) {
   return p;
 }
 
+#if !defined(NO_MALLOC)
 __attribute__((weak))void* json_malloc(size_t len) { return (malloc(len)); }
 
 __attribute__((weak))void json_free(void *p) { free(p); }
@@ -75,6 +76,7 @@ void json_destroy_buffer(void *p) {
   if (((json_buffer*)p)->dynamic)
     json_free(p);
 }
+#endif
 
 void* json_init_buffer(size_t len, void *buf) {
 

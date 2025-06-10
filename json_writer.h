@@ -47,12 +47,14 @@ typedef struct {
 extern "C" {
 #endif
 
+#if !defined(NO_MALLOC)
 __attribute__((weak)) void* json_malloc(size_t len);
 
 __attribute__((weak)) void json_free(void *p);
 
 /** @brief Allocate work buffer. */
 void* json_alloc_buffer(size_t len);
+#endif
 
 /** @brief Deallocate work buffer. */
 void json_destroy_buffer(void *p);

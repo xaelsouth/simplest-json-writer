@@ -24,7 +24,7 @@
 #
 
 OUTFILE ?= json_writer_main
-CFLAGS ?= -I. --std=c99 -Wall -O0 -g
+CFLAGS ?= -I. --std=c99 -Wall -O0 -g #-DNO_MALLOC
 CC ?= gcc
 RM ?= rm -f
 LDFLAGS ?=
