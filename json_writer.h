@@ -54,10 +54,10 @@ __attribute__((weak)) void json_free(void *p);
 
 /** @brief Allocate work buffer. */
 void* json_alloc_buffer(size_t len);
-#endif
 
 /** @brief Deallocate work buffer. */
 void json_destroy_buffer(void *p);
+#endif
 
 /** @brief Initialise work buffer from static memory; No deallocation is needed. */
 void* json_init_buffer(size_t len, void *buf);
