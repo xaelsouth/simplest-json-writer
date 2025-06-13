@@ -59,9 +59,9 @@ static inline void* __json_init_buffer(size_t len, void *buf, int dynamic) {
 }
 
 #if !defined(NO_MALLOC)
-__attribute__((weak))void* json_malloc(size_t len) { return (malloc(len)); }
+__attribute__((weak)) void* json_malloc(size_t len) { return (malloc(len)); }
 
-__attribute__((weak))void json_free(void *p) { free(p); }
+__attribute__((weak)) void json_free(void *p) { free(p); }
 
 void* json_alloc_buffer(size_t len) {
 
@@ -102,9 +102,9 @@ static inline int __json_handler_error_code(json_buffer *p) {
 }
 
 /** 32 tab characters. */
-static char *tab_chars = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+static const char tab_chars[] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
-int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *const data) {
 
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
@@ -112,7 +112,7 @@ int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *data) {
   return (__json_handler_error_code(p));
 }
 
-int json_handler_otag(void *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_otag(void *p, const json_handler_data *hndl_data, void *const data) {
 
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
@@ -120,7 +120,7 @@ int json_handler_otag(void *p, const json_handler_data *hndl_data, void *data) {
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
@@ -134,7 +134,7 @@ int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *d
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);

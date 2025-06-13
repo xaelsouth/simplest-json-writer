@@ -25,7 +25,9 @@
 
 OUTFILE ?= json_writer_main
 CFLAGS ?= -I. --std=c99 -Wall -O0 -g #-DNO_MALLOC
+CXXFLAGS ?= -I. --std=c++14 -Wall -O0 -g 
 CC ?= gcc
+CXX ?= g++
 RM ?= rm -f
 LDFLAGS ?=
 
@@ -41,9 +43,12 @@ clean:
 # Clean this project and all dependencies
 cleanall: clean all
 
+%.o: %.cc %.cpp $(DEPS)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
+
 %.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(OUTFILE): $(OBJ)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
