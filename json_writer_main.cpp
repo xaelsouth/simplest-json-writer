@@ -23,6 +23,7 @@
  * SUCH DAMAGE.
  */
 
+#include <iostream>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -35,57 +36,55 @@
 #define ARRAY_END(arr) (ARRAY_BEGIN(arr) + ARRAY_SIZE(arr))
 
 
-char entry1_text[32] = {0};
-char entry2_text[32] = {0};
-char entry3_text[32] = {0};
-char entry4_text[32] = {0};
+char entry1_text[32] = { 0 };
+char entry2_text[32] = { 0 };
+char entry3_text[32] = { 0 };
+char entry4_text[32] = { 0 };
 int edgelock_state = 0;
 int bootcounter = 0;
 
-static json_writer json_writers[] = {
+static const json_writer json_writers[] = {
 
-  {json_handler_otag, {.otag = "{\n"}, },
+  { json_handler_otag, { .otag = "{\n" }, },
 
-    {json_handler_entry_text, {.otag = "", .name = "entry1", .fmt = "%s", .ctag=",\n", .level=1}, entry1_text},
-    {json_handler_entry_text, {.otag = "", .name = "entry2", .ctag=",\n", .level=1}, entry2_text},
-    {json_handler_entry_text, {.otag = "", .name = "entry3", .ctag=",\n", .level=1}, entry3_text},
-    {json_handler_entry_text, {.otag = "", .name = "entry4", .ctag=",\n", .level=1}, entry4_text},
-    {json_handler_otag, {.otag = "\"entry5\": {\n", .level=1}},
+  { json_handler_entry_text, { .otag = "", .name = "entry1", .fmt = "%s", .ctag = ",\n", .level = 1 }, entry1_text },
+  { json_handler_entry_text, { .otag = "", .name = "entry2", .ctag = ",\n", .level = 1 }, entry2_text },
+  { json_handler_entry_text, { .otag = "", .name = "entry3", .ctag = ",\n", .level = 1 }, entry3_text },
+  { json_handler_entry_text, { .otag = "", .name = "entry4", .ctag = ",\n", .level = 1 }, entry4_text },
+  { json_handler_otag, { .otag = "\"entry5\": {\n", .level = 1 } },
 
-      {json_handler_entry_number, {.otag = "", .name = "entry6", .fmt = "%d", .ctag=",\n", .level=2}, &edgelock_state},
-      {json_handler_entry_number, {.otag = "", .name = "entry7", .ctag="\n", .level=2}, &bootcounter},
+  { json_handler_entry_number, { .otag = "", .name = "entry6", .fmt = "%d", .ctag = ",\n", .level = 2 }, &edgelock_state },
+  { json_handler_entry_number, { .otag = "", .name = "entry7", .ctag = "\n", .level = 2 }, &bootcounter },
 
-    {json_handler_ctag, {.ctag = "}\n", .level=1}},
+  { json_handler_ctag, { .ctag = "}\n", .level = 1 } },
 
-  {json_handler_ctag, {.ctag = "}"}, },
+  { json_handler_ctag, { .ctag = "}" }, },
 };
 
 static void _json_example1(void *p) {
 
-    snprintf(entry1_text, sizeof(entry1_text), "entry1_text");
-    snprintf(entry2_text, sizeof(entry2_text), "entry2_text");
-    snprintf(entry3_text, sizeof(entry3_text), "entry3 text with spaces");
-    snprintf(entry4_text, sizeof(entry4_text), "entry4 with \\\"\\\" \\\"\\\" quotes");
-    edgelock_state = 42;
-    bootcounter = 314;
+  snprintf(entry1_text, sizeof(entry1_text), "entry1_text");
+  snprintf(entry2_text, sizeof(entry2_text), "entry2_text");
+  snprintf(entry3_text, sizeof(entry3_text), "entry3 text with spaces");
+  snprintf(entry4_text, sizeof(entry4_text), "entry4 with \\\"\\\" \\\"\\\" quotes");
+  edgelock_state = 42;
+  bootcounter = 314;
 
-    for (json_writer *writer = ARRAY_BEGIN(json_writers);
-         writer != ARRAY_END(json_writers); ++writer)
-    {
-      if (writer->hndl) {
-        writer->hndl(p, &writer->hdnl_data, writer->data);
-      }
+  for (const json_writer *writer = ARRAY_BEGIN(json_writers);
+       writer != ARRAY_END(json_writers); ++writer) {
+    if (writer->hndl) {
+      writer->hndl(p, &writer->hdnl_data, writer->data);
     }
-    
-    printf("%s\n", json_get_string(p));
+  }
 
-    printf("%s\n", json_get_compressed_string(p));
+  printf("%s\n", json_get_string(p));
+
+  printf("%s\n", json_get_compressed_string(p));
 }
 
 int main(int argc, char *argv[]) {
 
-  if (1)
-  {
+  if (1) {
     static uint8_t static_buffer[1024];
     void *p = json_init_buffer(sizeof(static_buffer), static_buffer);
 
@@ -96,16 +95,30 @@ int main(int argc, char *argv[]) {
   }
 
   #if !defined(NO_MALLOC)
-  if (1)
-  {
+  if (1) {
     void *p = json_alloc_buffer(1024);
 
     if (!p)
       return EXIT_FAILURE;
 
     _json_example1(p);
-        
+
     json_destroy_buffer(p);
+  }
+
+  if (1) {
+    try {
+      JSONBufferWrapper p(1024);
+      _json_example1(&p);
+    }
+    catch (const std::runtime_error &err) {
+      std::cerr << err.what() << std::endl;
+      return EXIT_FAILURE;
+    }
+    catch (...) {
+      std::cerr << "Unknown error" << std::endl;
+      return EXIT_FAILURE;
+    }
   }
   #endif
 
