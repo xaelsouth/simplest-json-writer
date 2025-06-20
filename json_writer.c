@@ -104,7 +104,7 @@ static inline int __json_handler_error_code(json_buffer *p) {
 /** 32 tab characters. */
 static const char tab_chars[] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
 
-int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *const data) {
+int json_handler_ctag(void *p, const json_handler_data *hndl_data, void * const data) {
 
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
@@ -112,7 +112,7 @@ int json_handler_ctag(void *p, const json_handler_data *hndl_data, void *const d
   return (__json_handler_error_code(p));
 }
 
-int json_handler_otag(void *p, const json_handler_data *hndl_data, void *const data) {
+int json_handler_otag(void *p, const json_handler_data *hndl_data, void * const data) {
 
   __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
   __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
@@ -120,7 +120,7 @@ int json_handler_otag(void *p, const json_handler_data *hndl_data, void *const d
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *const data) {
+int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void * const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
@@ -134,7 +134,7 @@ int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void *c
   return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void *const data) {
+int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void * const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
@@ -150,37 +150,93 @@ int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void 
 
 char* json_get_string(void *p) { return (((json_buffer*)p)->buf); }
 
-char* json_get_compressed_string(void *p) {
+typedef enum {
+  STATE_CHAR = 0, STATE_QUOTE, STATE_ESC, STATE_ERROR, STATE_MAX
+} FSMState;
 
-  char *str = json_get_string(p);
-  char *r, *w;
-  int quote_found = 0;
-  int backslash_found = 0;
+typedef FSMState (*state_hndl)(char ch, char **w);
 
-  for (r = str, w = str; *r; ++r) {
-    if (backslash_found) {
-      if (*r == '"') {      
-        backslash_found ^= 1;
-      }
-      else {
-        assert(0); /* Wrong syntax: quote char " must follow backslash \. */
-        return NULL;
-      }
-    }
-    else if (*r == '"') {
-      quote_found ^= 1;
-    }
+FSMState __state_char(char ch, char **w) {
 
-    if (quote_found) {
-      *w++ = *r;
-      if (*r == '\\')
-        backslash_found ^= 1;
-    }
-    else if (!isspace(*r)) {
-      *w++ = *r;
-    }
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+  else if (ch == '\\') {
+    assert(0); /* Escape character only possible if in quotes. */
+    return STATE_ERROR;
+  }
+  else if (!isspace(ch)) {
+    **w = ch;
+    (*w)++;
   }
 
+  return STATE_CHAR;
+}
+
+FSMState __state_quote(char ch, char **w) {
+
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_CHAR;
+  }
+  else if (ch == '\\') {
+    **w = ch;
+    (*w)++;
+    return STATE_ESC;
+  }
+
+  **w = ch;
+  (*w)++;
+  return STATE_QUOTE;
+}
+
+FSMState __state_esc(char ch, char **w) {
+
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+  else if (ch == '\\') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+
+  assert(0);
+  return STATE_ERROR;
+}
+
+FSMState __state_error(char ch, char **w) {
+
+  assert(0);
+  return STATE_ERROR;
+}
+
+char* json_get_compressed_string(void *p) {
+
+  static const state_hndl states[] = {
+    [STATE_CHAR] = __state_char,
+    [STATE_QUOTE] = __state_quote,
+    [STATE_ESC] = __state_esc,
+    [STATE_ERROR] = __state_error,
+  };
+
+  _Static_assert(STATE_MAX == sizeof(states) / sizeof(states[0]), "Unimplemented state");
+
+  char * const str = json_get_string(p);
+  char *r = str, *w = str;
+  FSMState state = STATE_CHAR;
+
+  /* Process input string. */
+  while (*r && state != STATE_ERROR) {
+    state = states[state](*r++, &w);
+  }
+
+  /* Fill up the result string with '\0'. */
   while (w != r) {
     *w++ = '\0';
   }

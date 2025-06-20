@@ -23,16 +23,19 @@
 # SUCH DAMAGE.
 #
 
-OUTFILE ?= json_writer_main
-CFLAGS ?= -I. --std=c99 -Wall -O0 -g #-DNO_MALLOC
-CXXFLAGS ?= -I. --std=c++14 -Wall -O0 -g 
+CPPFLAGS ?= -I. #-DNO_MALLOC
+CFLAGS ?= --std=c99 -Wall -O0 -g
+CXXFLAGS ?= --std=c++14 -Wall -O0 -g
+LDFLAGS ?=
+LDLIBS ?=
 CC ?= gcc
 CXX ?= g++
 RM ?= rm -f
-LDFLAGS ?=
+
+OUTFILE ?= json_writer_main
 
 DEPS = json_writer.h Makefile
-OBJ = json_writer.o json_writer_main.o 
+OBJ = json_writer.o json_writer_main.o
 
 all: $(OUTFILE)
 
@@ -43,12 +46,11 @@ clean:
 # Clean this project and all dependencies
 cleanall: clean all
 
-%.o: %.cc %.cpp $(DEPS)
-	$(CXX) -c -o $@ $< $(CXXFLAGS)
-
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+%.o: %.cc %.cpp $(DEPS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 $(OUTFILE): $(OBJ)
-	$(CXX) -o $@ $^ $(LDFLAGS)
-
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)

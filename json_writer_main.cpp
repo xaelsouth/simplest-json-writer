@@ -36,10 +36,10 @@
 #define ARRAY_END(arr) (ARRAY_BEGIN(arr) + ARRAY_SIZE(arr))
 
 
-char entry1_text[32] = { 0 };
-char entry2_text[32] = { 0 };
-char entry3_text[32] = { 0 };
-char entry4_text[32] = { 0 };
+char entry1_text[64] = { 0 };
+char entry2_text[64] = { 0 };
+char entry3_text[64] = { 0 };
+char entry4_text[64] = { 0 };
 int edgelock_state = 0;
 int bootcounter = 0;
 
@@ -66,7 +66,7 @@ static void _json_example1(void *p) {
   snprintf(entry1_text, sizeof(entry1_text), "entry1_text");
   snprintf(entry2_text, sizeof(entry2_text), "entry2_text");
   snprintf(entry3_text, sizeof(entry3_text), "entry3 text with spaces");
-  snprintf(entry4_text, sizeof(entry4_text), "entry4 with \\\"\\\" \\\"\\\" quotes");
+  snprintf(entry4_text, sizeof(entry4_text), "entry4 with \\\"\\\" \\\"\\\" quotes and \\\\ \\\\ \\\\ \\\\ backslashes");
   edgelock_state = 42;
   bootcounter = 314;
 
