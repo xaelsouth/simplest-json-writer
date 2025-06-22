@@ -26,8 +26,8 @@
 CPPFLAGS ?= -I.
 CPPFLAGS += -DDEBUG #-DNDEBUG
 CPPFLAGS += #-DNO_MALLOC
-CFLAGS ?= --std=c99 -Wall -Wpedantic -O0 -g
-CXXFLAGS ?= --std=c++20 -Wall -Wpedantic -O0 -g
+CFLAGS ?= --std=c17 -Wall -pedantic -O0 -g
+CXXFLAGS ?= --std=c++20 -Wall -pedantic -O0 -g
 LDFLAGS ?=
 LDLIBS ?=
 CC ?= gcc
