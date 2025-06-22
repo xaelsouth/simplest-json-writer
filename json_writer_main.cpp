@@ -23,10 +23,12 @@
  * SUCH DAMAGE.
  */
 
+#include <cassert>
+#include <cstring>
 #include <iostream>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdint>
+#include <cstdlib>
 
 #include "json_writer.h"
 
@@ -77,9 +79,14 @@ static void _json_example1(void *p) {
     }
   }
 
-  printf("%s\n", json_get_string(p));
+  const char *uncompressed_string_a = json_get_string(p);
+  printf("%s\n", uncompressed_string_a);
 
-  printf("%s\n", json_get_compressed_string(p));
+  const char *compressed_string_a = json_get_compressed_string(p);
+  printf("%s\n", compressed_string_a);
+
+  const char *compressed_string_b = R"({"entry1":"entry1_text","entry2":"entry2_text","entry3":"entry3 text with spaces","entry4":"entry4 with \"\" \"\" quotes and \\ \\ \\ \\ backslashes","entry5":{"entry6":42,"entry7":314}})";
+  assert(strcmp(compressed_string_a, compressed_string_b) == 0);
 }
 
 int main(int argc, char *argv[]) {

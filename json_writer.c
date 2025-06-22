@@ -212,6 +212,9 @@ FSMState __state_esc(char ch, char **w) {
 
 FSMState __state_error(char ch, char **w) {
 
+  (void)ch;
+  (void)w;
+
   assert(0);
   return STATE_ERROR;
 }

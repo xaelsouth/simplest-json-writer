@@ -23,9 +23,11 @@
 # SUCH DAMAGE.
 #
 
-CPPFLAGS ?= -I. #-DNO_MALLOC
-CFLAGS ?= --std=c99 -Wall -O0 -g
-CXXFLAGS ?= --std=c++14 -Wall -O0 -g
+CPPFLAGS ?= -I.
+CPPFLAGS += -DDEBUG #-DNDEBUG
+CPPFLAGS += #-DNO_MALLOC
+CFLAGS ?= --std=c99 -Wall -Wpedantic -O0 -g
+CXXFLAGS ?= --std=c++20 -Wall -Wpedantic -O0 -g
 LDFLAGS ?=
 LDLIBS ?=
 CC ?= gcc
