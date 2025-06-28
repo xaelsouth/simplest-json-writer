@@ -156,7 +156,7 @@ typedef enum {
 
 typedef FSMState (*state_hndl)(char ch, char **w);
 
-FSMState __state_char(char ch, char **w) {
+static FSMState __state_char(char ch, char **w) {
 
   if (ch == '"') {
     **w = ch;
@@ -175,7 +175,7 @@ FSMState __state_char(char ch, char **w) {
   return STATE_CHAR;
 }
 
-FSMState __state_quote(char ch, char **w) {
+static FSMState __state_quote(char ch, char **w) {
 
   if (ch == '"') {
     **w = ch;
@@ -193,7 +193,7 @@ FSMState __state_quote(char ch, char **w) {
   return STATE_QUOTE;
 }
 
-FSMState __state_esc(char ch, char **w) {
+static FSMState __state_esc(char ch, char **w) {
 
   if (ch == '"') {
     **w = ch;
@@ -210,7 +210,7 @@ FSMState __state_esc(char ch, char **w) {
   return STATE_ERROR;
 }
 
-FSMState __state_error(char ch, char **w) {
+static FSMState __state_error(char ch, char **w) {
 
   (void)ch;
   (void)w;
