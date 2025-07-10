@@ -29,18 +29,26 @@
 #include <limits.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
 #include <ctype.h>
 
 #include "json_writer.h"
 
-static json_buffer* __alloc_json_buffer(size_t len, void *buf, int dynamic) {
+typedef struct {
+  char *buf;
+  size_t len;
+  size_t used;
+  unsigned dynamic: 1;
+} json_buffer;
+
+static inline void* __json_init_buffer(size_t len, void *buf, int dynamic) {
 
   if (!buf)
     return NULL;
 
-  json_buffer *const p = buf;
+  json_buffer * const p = buf;
 
-  p->buf = (char *)(((uint8_t *)p) + sizeof(json_buffer));
+  p->buf = (char*)(((uint8_t*)p) + sizeof(*p));
   p->len = len;
   p->used = 0;
   p->dynamic = dynamic;
@@ -50,98 +58,193 @@ static json_buffer* __alloc_json_buffer(size_t len, void *buf, int dynamic) {
   return p;
 }
 
-json_buffer* alloc_json_buffer(size_t len) {
+#if !defined(NO_MALLOC)
+__attribute__((weak)) void* json_malloc(size_t len) { return (malloc(len)); }
 
-  return __alloc_json_buffer(len, malloc(sizeof(json_buffer) + len), 1);
+__attribute__((weak)) void json_free(void *p) { free(p); }
+
+void* json_alloc_buffer(size_t len) {
+
+  return (__json_init_buffer(len, json_malloc(sizeof(json_buffer) + len), 1));
 }
 
-json_buffer* alloc_json_buffer_static(size_t len, void *buf) {
-
-  if (len < sizeof(json_buffer))
-    return NULL; /* Insufficient space. */
-
-  return __alloc_json_buffer(len, buf, 0);
-}
-
-
-void destroy_json_buffer(json_buffer *p) {
+void json_destroy_buffer(void *p) {
 
   if (!p)
     return;
 
-  if (p->dynamic)
-    free(p);
+  if (((json_buffer*)p)->dynamic)
+    json_free(p);
+}
+#endif
+
+void* json_init_buffer(size_t len, void *buf) {
+
+  if (len < sizeof(json_buffer))
+    return NULL; /* Insufficient space. */
+
+  return (__json_init_buffer(len, buf, 0));
 }
 
-#define json_handler_snprintf(p, ...) \
-  p->used += snprintf(p->buf + p->used, p->len - p->used, __VA_ARGS__)
+static inline size_t __json_handler_snprintf(json_buffer *p, const char *format, ...) {
 
-#define json_handler_error_code(p) ((p->used < p->len) ? 0 : 1)
+  va_list valist;
+  va_start(valist, format);
+  p->used += vsnprintf(p->buf + p->used, p->len - p->used, format, valist);
+  va_end(valist);
 
-#define tab_chars "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t"
-
-int json_handler_ctag(json_buffer *p, const json_handler_data *hndl_data, void *data) {
-
-  json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
-  json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
-  
-  return json_handler_error_code(p);
+  return (p->used);
 }
 
-int json_handler_otag(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+static inline int __json_handler_error_code(json_buffer *p) {
 
-  json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
-  json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
-  
-  return json_handler_error_code(p);
+  return ((p->used < p->len) ? 0 : 1);
 }
 
-int json_handler_entry_text(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+/** 32 tab characters. */
+static const char tab_chars[] = "\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t\t";
+
+int json_handler_ctag(void *p, const json_handler_data *hndl_data, void * const data) {
+
+  __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
+  __json_handler_snprintf(p, "%s", hndl_data->ctag ? hndl_data->ctag : "");
+
+  return (__json_handler_error_code(p));
+}
+
+int json_handler_otag(void *p, const json_handler_data *hndl_data, void * const data) {
+
+  __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
+  __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
+
+  return (__json_handler_error_code(p));
+}
+
+int json_handler_entry_text(void *p, const json_handler_data *hndl_data, void * const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
-  json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
-  json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
-  json_handler_snprintf(p, "\"%s\": \"", hndl_data->name);
-  json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%s", data ? (const char *)data : "");
-  json_handler_snprintf(p, "\"%s", hndl_data->ctag ? hndl_data->ctag : "");
-  
-  return json_handler_error_code(p);
+  __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
+  __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
+  __json_handler_snprintf(p, "\"%s\": \"", hndl_data->name);
+  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%s", data ? (const char*)data : "");
+  __json_handler_snprintf(p, "\"%s", hndl_data->ctag ? hndl_data->ctag : "");
+
+  return (__json_handler_error_code(p));
 }
 
-int json_handler_entry_number(json_buffer *p, const json_handler_data *hndl_data, void *data) {
+int json_handler_entry_number(void *p, const json_handler_data *hndl_data, void * const data) {
 
   assert(hndl_data->name != NULL && strlen(hndl_data->name) > 0);
   assert(hndl_data->ctag != NULL && strlen(hndl_data->ctag) > 0);
 
-  json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
-  json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
-  json_handler_snprintf(p, "\"%s\": ", hndl_data->name);
-  json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%d", data ? *(int *)data : INT_MIN);
-  json_handler_snprintf(p, "%s", hndl_data->ctag);
-  
-  return json_handler_error_code(p);
+  __json_handler_snprintf(p, "%.*s", hndl_data->level, tab_chars);
+  __json_handler_snprintf(p, "%s", hndl_data->otag ? hndl_data->otag : "");
+  __json_handler_snprintf(p, "\"%s\": ", hndl_data->name);
+  __json_handler_snprintf(p, hndl_data->fmt ? hndl_data->fmt : "%d", data ? *(int*)data : INT_MIN);
+  __json_handler_snprintf(p, "%s", hndl_data->ctag);
+
+  return (__json_handler_error_code(p));
 }
 
-const char* json_handler_compress_in_place(char *str) {
+char* json_get_string(void *p) { return (((json_buffer*)p)->buf); }
 
-  int string_found = 0;
-  char *r, *w;
+typedef enum {
+  STATE_CHAR = 0, STATE_QUOTE, STATE_ESC, STATE_ERROR, STATE_MAX
+} FSMState;
 
-  for (r = str, w = str; *r; ++r) {
-    if (*r == '"') {
-      string_found ^= 1;
-    }
+typedef FSMState (*state_hndl)(char ch, char **w);
 
-    if (string_found) {
-      *w++ = *r;
-    }
-    else if (!isspace(*r)) {
-      *w++ = *r;
-    }
+static FSMState __state_char(char ch, char **w) {
+
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+  else if (ch == '\\') {
+    assert(0); /* Escape character only possible if in quotes. */
+    return STATE_ERROR;
+  }
+  else if (!isspace(ch)) {
+    **w = ch;
+    (*w)++;
   }
 
+  return STATE_CHAR;
+}
+
+static FSMState __state_quote(char ch, char **w) {
+
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_CHAR;
+  }
+  else if (ch == '\\') {
+    **w = ch;
+    (*w)++;
+    return STATE_ESC;
+  }
+
+  **w = ch;
+  (*w)++;
+  return STATE_QUOTE;
+}
+
+static FSMState __state_esc(char ch, char **w) {
+
+  if (ch == '"') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+  else if (ch == '\\') {
+    **w = ch;
+    (*w)++;
+    return STATE_QUOTE;
+  }
+
+  assert(0);
+  return STATE_ERROR;
+}
+
+static FSMState __state_error(char ch, char **w) {
+
+  (void)ch;
+  (void)w;
+
+  assert(0);
+  return STATE_ERROR;
+}
+
+char* json_get_compressed_string(void *p) {
+
+  static const state_hndl states[] = {
+    [STATE_CHAR] = __state_char,
+    [STATE_QUOTE] = __state_quote,
+    [STATE_ESC] = __state_esc,
+    [STATE_ERROR] = __state_error,
+  };
+
+  _Static_assert(STATE_MAX == sizeof(states) / sizeof(states[0]), "Unimplemented state");
+
+  char * const str = json_get_string(p);
+  char *r = str, *w = str;
+  FSMState state = STATE_CHAR;
+
+  /* Process input string. */
+  while (*r && state != STATE_ERROR) {
+    state = states[state](*r++, &w);
+  }
+
+  if (state == STATE_ERROR) {
+    /* In error case str will be '\0'-ed. */
+    w = r = str;
+  }
+
+  /* Fill up the result string with '\0'. */
   while (w != r) {
     *w++ = '\0';
   }

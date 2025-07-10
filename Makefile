@@ -23,14 +23,21 @@
 # SUCH DAMAGE.
 #
 
-OUTFILE ?= json_writer_main
-CFLAGS ?= -I. --std=c99 -Wall -O0 -g
-CC ?= gcc
-RM ?= rm -f
+CPPFLAGS ?= -I.
+CPPFLAGS += -DDEBUG #-DNDEBUG
+CPPFLAGS += #-DNO_MALLOC
+CFLAGS ?= --std=c17 -Wall -pedantic -O0 -g
+CXXFLAGS ?= --std=c++20 -Wall -pedantic -O0 -g
 LDFLAGS ?=
+LDLIBS ?=
+CC ?= gcc
+CXX ?= g++
+RM ?= rm -f
 
-DEPS = json_writer.h
-OBJ = json_writer.o json_writer_main.o 
+OUTFILE ?= json_writer_main
+
+DEPS = json_writer.h Makefile
+OBJ = json_writer.o json_writer_main.o
 
 all: $(OUTFILE)
 
@@ -42,8 +49,10 @@ clean:
 cleanall: clean all
 
 %.o: %.c $(DEPS)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+%.o: %.cc %.cpp $(DEPS)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c -o $@ $<
 
 $(OUTFILE): $(OBJ)
-	$(CC) -o $@ $^ $(LDFLAGS)
-
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
