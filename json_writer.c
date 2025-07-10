@@ -239,6 +239,11 @@ char* json_get_compressed_string(void *p) {
     state = states[state](*r++, &w);
   }
 
+  if (state == STATE_ERROR) {
+    /* In error case str will be '\0'-ed. */
+    w = r = str;
+  }
+
   /* Fill up the result string with '\0'. */
   while (w != r) {
     *w++ = '\0';
